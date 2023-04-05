@@ -1,0 +1,113 @@
+#!/bin/sh
+
+#
+#  https://github.com/bijualbert/whatsmyip
+#
+
+# Defaults
+DEBUG="false"
+MAX=20
+SLEEPTIME=1
+NUMProv=9
+
+while getopts ":dp:r:s:" opt; do
+  case ${opt} in
+    d)
+       DEBUG="true"
+       ;;
+    p)
+       if [[ $OPTARG -ge 0 && $OPTARG -le $NUMProv ]];then
+         PROVIDER=$OPTARG
+       else
+         echo "Invalid value or out-of-range for (p)rovider."
+         exit 1
+       fi
+       ;;
+    r)
+       if [[ $OPTARG > 0 ]];then
+         MAX=$OPTARG
+       else
+         echo "Invalid value for (r)etries."
+         exit 1
+       fi
+       ;;
+    s)
+       if [[ $OPTARG > 0 ]];then
+         SLEEPTIME=$OPTARG
+       else
+         echo "Invalid value for (s)leep interval."
+         exit 1
+       fi
+       ;;
+    \?)
+       echo "Invalid option -$OPTARG" >&2
+       exit 1
+       ;;
+  esac
+done
+
+
+Count=0
+while [ $Count -lt $MAX ];do
+
+    if [[ $PROVIDER == "" ]];then
+      Prov=`echo $(( ( RANDOM % $NUMProv )  ))`
+    else
+      Prov=$PROVIDER
+    fi
+
+    case $Prov in
+
+    0 )
+        PROVIDERURL="https://api.ipify.org"
+        ;;
+    1 )
+        PROVIDERURL="https://ipv4.wtfismyip.com/text"
+        ;;
+    2 )
+        PROVIDERURL="http://checkip.dyndns.org"
+        ;;
+    3 )
+        PROVIDERURL="https://ipv4bot.whatismyipaddress.com"
+        ;;
+    4 )
+        PROVIDERURL="http://whatismyip.akamai.com"
+        ;;
+    5 )
+        PROVIDERURL="http://www.ip-adress.eu/"
+        ;;
+    6 )
+        PROVIDERURL="https://api.ipify.org/"
+        ;;
+    7 )
+        PROVIDERURL="http://ipv4.ident.me"
+        ;;
+    8 )
+        PROVIDERURL="http://ipecho.net/plain"
+        ;;
+    9 )
+        PROVIDERURL="https://ip4.seeip.org/"
+        ;;
+    esac
+
+    if [[ $DEBUG == "true" ]];then
+      echo "Trying Provider $Prov: $PROVIDERURL"
+    fi
+
+    X=`timeout 5s curl -s $PROVIDERURL 2>/dev/null| grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|head -1'`
+
+    if [ "$X" = "" ];then
+        Count=`expr $Count + 1`
+        sleep $SLEEPTIME
+    else 
+        break
+    fi
+done
+
+#  Display results
+if [[  $Count -lt $MAX ]];then
+  echo $X
+else
+  echo "unknown"
+  exit 1
+fi
